@@ -1,23 +1,51 @@
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import "./App.scss";
 import { Canvas, useFrame } from "react-three-fiber";
+import {
+  softShadows,
+  MeshWobbleMaterial,
+  OrbitControls,
+} from "@react-three/drei";
+
+import { useSpring, a } from "@react-spring/three";
 
 function App() {
-  const SpinningMesh = ({ position, color, args }) => {
+  softShadows();
+
+  const SpinningMesh = ({ position, color, args, speed }) => {
     const mesh = useRef(null);
     useFrame(() => (mesh.current.rotation.x = mesh.current.rotation.y += 0.01));
+
+    const [expand, setExpand] = useState(false);
+
+    const props = useSpring({
+      scale: expand ? [1.4, 1.4, 1.4] : [1, 1, 1],
+    });
+
     return (
-      <mesh position={position} ref={mesh}>
+      <a.mesh
+        onClick={() => setExpand(!expand)}
+        scale={props.scale}
+        castShadow
+        position={position}
+        ref={mesh}
+      >
         <boxBufferGeometry attach="geometry" args={args} />
-        <meshStandardMaterial attach="material" color={color} />
-      </mesh>
+        <MeshWobbleMaterial
+          attach="material"
+          color={color}
+          speed={speed}
+          factor={0.6}
+        />
+      </a.mesh>
     );
   };
   return (
-    <Canvas colorManagement camera={{ position: [-5, 2, 10], fov: 60 }}>
+    <Canvas shadows colorManagement camera={{ position: [-5, 2, 10], fov: 60 }}>
       <ambientLight intensity={0.3} />
 
       <directionalLight
+        castShadow
         position={[0, 10, 0]}
         intensity={1.5}
         shadow-mapSize-width={1024}
@@ -27,18 +55,37 @@ function App() {
         shadow-camera-right={10}
         shadow-camera-top={10}
         shadow-camera-bottom={-10}
-
       />
 
       {/* Light coming from left */}
       <pointLight position={[-10, 0, -20]} intensity={0.5} />
 
-      {/* Light coming from botto, */}
+      {/* Light coming from bottom */}
       <pointLight position={[0, -10, 0]} intensity={1.5} />
 
-      <SpinningMesh position={[0, 1, 0]} args={[3, 2, 1]} color="lightBlue" />
-      <SpinningMesh position={[-2, 1, -5]} args={[3, 2, 1]} color="pink" />
-      <SpinningMesh position={[5, 1, -2]} args={[3, 2, 1]} color="pink" />
+      <group>
+        <mesh
+          receiveShadow
+          rotation={[-Math.PI / 2, 0, 0]}
+          position={[0, -3, 0]}
+        >
+          <planeBufferGeometry attach="geometry" args={[100, 100]} />
+          {/* This will need to cast a shadow */}
+          {/* <meshStandardMaterial attach="material" color="red" /> */}
+          <shadowMaterial attach="material" opacity={0.3} />
+        </mesh>
+
+        <SpinningMesh
+          position={[0, 1, 0]}
+          args={[3, 2, 1]}
+          color="lightBlue"
+          speed={2}
+        />
+        <SpinningMesh position={[-2, 1, -5]} color="pink" speed={6} />
+        <SpinningMesh position={[5, 1, -2]} color="pink" speed={6} />
+      </group>
+
+      <OrbitControls />
     </Canvas>
   );
 }
